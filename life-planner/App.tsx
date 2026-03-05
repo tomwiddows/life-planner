@@ -1,47 +1,27 @@
-import { useEffect, useState } from 'react'
-import { StyleSheet, View, FlatList, Text } from 'react-native'
+import 'react-native-url-polyfill/auto'
+import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-
-type Aim = {
-  id: number
-  aim: string
-}
+import Auth from './components/Auth'
+import Account from './components/Account'
+import { View } from 'react-native'
+import { Session } from '@supabase/supabase-js'
 
 export default function App() {
-  const [aims, setAims] = useState<Aim[]>([])
+  const [session, setSession] = useState<Session | null>(null)
 
   useEffect(() => {
-    getAims()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
   }, [])
 
-  async function getAims() {
-    const { data } = await supabase.from('aims').select()
-    if (data) setAims(data)
-  }
-
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={aims}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <Text style={styles.item}>{item.aim}</Text>
-        )}
-      />
+    <View>
+      {session ? <Account session={session} /> : <Auth />}
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingHorizontal: 16,
-  },
-  item: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-})
